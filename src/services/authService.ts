@@ -20,9 +20,9 @@ interface AuthResponse {
 }
 
 export async function signIn(credentials: AuthCredentials): Promise<AuthResponse> {
-    const response = await api.post('/auth/login', credentials);
+    const response = await api.post("/auth/login", credentials);
     return response.data;
-};
+}
 
 export async function signUp(data: RegisterData): Promise<CreateUserResponse> {
     const response = await api.post("/auth/signup", {
@@ -38,9 +38,10 @@ export async function verifyEmail(code: string): Promise<PersistUserResponse> {
     const otp_token = await AsyncStorage.getItem(STORAGE_KEYS.OTP_TOKEN);
     if (!otp_token) throw new Error("OTP token not found.");
 
-    const response = await api.post("/auth/confirmOtp",
-      { code },
-      { headers: { Authorization: `Bearer ${otp_token}` } },
+    const response = await api.post(
+        "/auth/confirmOtp",
+        { code },
+        { headers: { Authorization: `Bearer ${otp_token}` } },
     );
 
     return response.data;

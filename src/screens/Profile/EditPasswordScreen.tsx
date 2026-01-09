@@ -16,172 +16,176 @@ import { useFocusEffect } from "@react-navigation/native";
 type Props = NativeStackScreenProps<ProfileStackparamList, "EditPassword">;
 
 export default function EditPasswordScreen({ navigation }: Props) {
-  const { updatePassword } = useAuth();
-  const { showSnackbar } = useSnackbar();
+    const { updatePassword } = useAuth();
+    const { showSnackbar } = useSnackbar();
 
-  const [current, setCurrent] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [showPasswords, setShowPasswords] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({ current: "", newPassword: "", confirmNewPassword: "" });
+    const [current, setCurrent] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmNewPassword, setConfirmNewPassword] = useState("");
+    const [showPasswords, setShowPasswords] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({ current: "", newPassword: "", confirmNewPassword: "" });
 
-  useFocusEffect(
-    useCallback(() => {
-      setCurrent("");
-      setNewPassword("");
-      setConfirmNewPassword("");
-      setShowPasswords(false);
-      setLoading(false);
-      setErrors({ current: "", newPassword: "", confirmNewPassword: "" });
-    }, []),
-  );
+    useFocusEffect(
+        useCallback(() => {
+            setCurrent("");
+            setNewPassword("");
+            setConfirmNewPassword("");
+            setShowPasswords(false);
+            setLoading(false);
+            setErrors({ current: "", newPassword: "", confirmNewPassword: "" });
+        }, []),
+    );
 
-  function validateForm(): boolean {
-    const newErrors = { current: "", newPassword: "", confirmNewPassword: "" };
-    let isValid = true;
+    function validateForm(): boolean {
+        const newErrors = { current: "", newPassword: "", confirmNewPassword: "" };
+        let isValid = true;
 
-    if (!current) {
-      newErrors.current = "Senha atual é obrigatória";
-      isValid = false;
+        if (!current) {
+            newErrors.current = "Senha atual é obrigatória";
+            isValid = false;
+        }
+
+        if (!newPassword) {
+            newErrors.newPassword = "Nova senha é obrigatória";
+            isValid = false;
+        } else if (newPassword.length < VALIDATION.PASSWORD_MIN_LENGTH) {
+            newErrors.newPassword = `Nova senha deve ter no mínimo ${VALIDATION.PASSWORD_MIN_LENGTH} caracteres`;
+            isValid = false;
+        }
+
+        if (confirmNewPassword !== newPassword) {
+            newErrors.confirmNewPassword = "As senhas não coincidem";
+            isValid = false;
+        }
+
+        setErrors(newErrors);
+        return isValid;
     }
 
-    if (!newPassword) {
-      newErrors.newPassword = "Nova senha é obrigatória";
-      isValid = false;
-    } else if (newPassword.length < VALIDATION.PASSWORD_MIN_LENGTH) {
-      newErrors.newPassword = `Nova senha deve ter no mínimo ${VALIDATION.PASSWORD_MIN_LENGTH} caracteres`;
-      isValid = false;
+    function handleAndRemoveError(value: any, field: keyof typeof errors, cb: (value?: any) => any) {
+        if (errors[field] !== "") {
+            setErrors((prevErrors) => ({ ...prevErrors, [field]: "" }));
+        }
+        cb(value);
     }
 
-    if (confirmNewPassword !== newPassword) {
-      newErrors.confirmNewPassword = "As senhas não coincidem";
-      isValid = false;
+    async function handleUpdate() {
+        if (!validateForm()) return;
+        setLoading(true);
+
+        try {
+            await updatePassword(current, newPassword);
+            showSnackbar("Senha atualizada com sucesso!", "success");
+            setTimeout(() => {
+                setLoading(false);
+                navigation.goBack();
+            }, 800);
+        } catch (error) {
+            if (error instanceof AxiosError && error.response?.status === 401) {
+                setErrors((prev) => ({ ...prev, current: "Senha atual incorreta" }));
+            } else {
+                showSnackbar("Erro ao atualizar a senha. Verifique sua senha atual e tente novamente.", "error");
+            }
+        } finally {
+            setLoading(false);
+        }
     }
 
-    setErrors(newErrors);
-    return isValid;
-  }
-
-  function handleAndRemoveError(value: any, field: keyof typeof errors, cb: (value?: any) => any) {
-    if (errors[field] !== "") {
-      setErrors((prevErrors) => ({ ...prevErrors, [field]: "" }));
+    function toggleShowPasswords() {
+        setShowPasswords((prev) => !prev);
     }
-    cb(value);
-  }
 
-  async function handleUpdate() {
-    if (!validateForm()) return;
-    setLoading(true);
+    return (
+        <View style={styles.container}>
+            <Header title="Alterar Senha" />
 
-    try {
-      await updatePassword(current, newPassword);
-      showSnackbar("Senha atualizada com sucesso!", "success");
-      setTimeout(() => {
-        setLoading(false);
-        navigation.goBack();
-      }, 800);
-    } catch (error) {
-      if (error instanceof AxiosError && error.response?.status === 401) {
-        setErrors((prev) => ({ ...prev, current: "Senha atual incorreta" }));
-      } else {
-        showSnackbar("Erro ao atualizar a senha. Verifique sua senha atual e tente novamente.", "error");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
+            <View style={styles.content}>
+                <Pressable style={styles.toggleContainer} onPress={toggleShowPasswords}>
+                    <Ionicons
+                        name={showPasswords ? "eye-off-outline" : "eye-outline"}
+                        size={22}
+                        color={COLORS.primary}
+                    />
+                    <Text style={styles.toggleText}>{showPasswords ? "Ocultar senhas" : "Mostrar senhas"}</Text>
+                </Pressable>
 
-  function toggleShowPasswords() {
-    setShowPasswords((prev) => !prev);
-  }
+                <View>
+                    <Input
+                        label="Senha Atual"
+                        value={current}
+                        onChangeText={(text) => handleAndRemoveError(text, "current", setCurrent)}
+                        secureTextEntry={!showPasswords}
+                        errorStr={errors.current}
+                        placeholder={showPasswords ? "" : "••••••••"}
+                    />
+                    <Input
+                        label="Nova Senha"
+                        value={newPassword}
+                        onChangeText={(text) => handleAndRemoveError(text, "newPassword", setNewPassword)}
+                        secureTextEntry={!showPasswords}
+                        errorStr={errors.newPassword}
+                        placeholder={showPasswords ? "" : "••••••••"}
+                    />
+                    <Input
+                        label="Confirmar Nova Senha"
+                        value={confirmNewPassword}
+                        onChangeText={(text) => handleAndRemoveError(text, "confirmNewPassword", setConfirmNewPassword)}
+                        secureTextEntry={!showPasswords}
+                        errorStr={errors.confirmNewPassword}
+                        placeholder={showPasswords ? "" : "••••••••"}
+                    />
+                </View>
 
-  return (
-    <View style={styles.container}>
-      <Header title="Alterar Senha" />
-
-      <View style={styles.content}>
-        <Pressable style={styles.toggleContainer} onPress={toggleShowPasswords}>
-          <Ionicons name={showPasswords ? "eye-off-outline" : "eye-outline"} size={22} color={COLORS.primary} />
-          <Text style={styles.toggleText}>{showPasswords ? "Ocultar senhas" : "Mostrar senhas"}</Text>
-        </Pressable>
-
-        <View>
-          <Input
-            label="Senha Atual"
-            value={current}
-            onChangeText={(text) => handleAndRemoveError(text, "current", setCurrent)}
-            secureTextEntry={!showPasswords}
-            errorStr={errors.current}
-            placeholder={showPasswords ? "" : "••••••••"}
-          />
-          <Input
-            label="Nova Senha"
-            value={newPassword}
-            onChangeText={(text) => handleAndRemoveError(text, "newPassword", setNewPassword)}
-            secureTextEntry={!showPasswords}
-            errorStr={errors.newPassword}
-            placeholder={showPasswords ? "" : "••••••••"}
-          />
-          <Input
-            label="Confirmar Nova Senha"
-            value={confirmNewPassword}
-            onChangeText={(text) => handleAndRemoveError(text, "confirmNewPassword", setConfirmNewPassword)}
-            secureTextEntry={!showPasswords}
-            errorStr={errors.confirmNewPassword}
-            placeholder={showPasswords ? "" : "••••••••"}
-          />
+                <CustomButton
+                    title="Salvar Alterações"
+                    icon={() => <Ionicons name="save-sharp" size={18} color={COLORS.surface} />}
+                    onPress={handleUpdate}
+                    loading={loading}
+                    size="medium"
+                />
+            </View>
         </View>
-
-        <CustomButton
-          title="Salvar Alterações"
-          icon={() => <Ionicons name="save-sharp" size={18} color={COLORS.surface} />}
-          onPress={handleUpdate}
-          loading={loading}
-          size="medium"
-        />
-      </View>
-    </View>
-  );
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  content: {
-    padding: SPACING.md,
-    marginTop: SPACING.sm,
-  },
-  input: {
-    marginBottom: SPACING.md,
-    backgroundColor: COLORS.background,
-  },
-  saveButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: BORDER_RADIUS.md,
-    paddingVertical: SPACING.md,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: SPACING.sm,
-  },
-  saveText: {
-    color: COLORS.surface,
-    fontSize: FONT_SIZES.md,
-    fontWeight: "600",
-  },
-  toggleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-end",
-    borderRadius: BORDER_RADIUS.md,
-  },
-  toggleText: {
-    marginLeft: 6,
-    color: COLORS.primary,
-    fontSize: FONT_SIZES.sm,
-    fontWeight: "500",
-  },
+    container: {
+        flex: 1,
+        backgroundColor: COLORS.background,
+    },
+    content: {
+        padding: SPACING.md,
+        marginTop: SPACING.sm,
+    },
+    input: {
+        marginBottom: SPACING.md,
+        backgroundColor: COLORS.background,
+    },
+    saveButton: {
+        backgroundColor: COLORS.primary,
+        borderRadius: BORDER_RADIUS.md,
+        paddingVertical: SPACING.md,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: SPACING.sm,
+    },
+    saveText: {
+        color: COLORS.surface,
+        fontSize: FONT_SIZES.md,
+        fontWeight: "600",
+    },
+    toggleContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        alignSelf: "flex-end",
+        borderRadius: BORDER_RADIUS.md,
+    },
+    toggleText: {
+        marginLeft: 6,
+        color: COLORS.primary,
+        fontSize: FONT_SIZES.sm,
+        fontWeight: "500",
+    },
 });

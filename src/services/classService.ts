@@ -9,4 +9,4 @@ interface AllClassesResponse {
 export async function getClasses(): Promise<AllClassesResponse> {
     const response = await api.get("/class");
     return response.data;
-};
+}

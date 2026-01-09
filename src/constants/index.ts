@@ -59,7 +59,7 @@ export const AVATAR_SIZES = {
     lg: 64,
     xl: 96,
     xxl: 128,
-    large: 150
+    large: 150,
 };
 
 export const SHADOWS = {
