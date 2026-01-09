@@ -1,11 +1,14 @@
 import React from "react";
-import { Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useAuth } from "../contexts/AuthContext";
-import { RootStackParamList, AuthStackParamList, MainTabParamList } from "../types";
+import {
+  RootStackParamList,
+  AuthStackParamList,
+  HomeStackParamList,
+  ProfileStackparamList,
+} from "../types";
 import { COLORS } from "../constants";
 
 // auth Screens
@@ -15,60 +18,51 @@ import ForgotPasswordScreen from "../screens/Auth/ForgotPasswordScreen";
 import VerifyEmailScreen from "../screens/Auth/VerifyEmailScreen";
 
 // main screens
-import ClassListScreen from "../screens/Classes/ClassListScreen";
+import HomeScreen from "../screens/Home/HomeScreen";
+
+// profile screens
 import ProfileScreen from "../screens/Profile/ProfileScreen";
+import EditProfileScreen from "../screens/Profile/EditProfileScreen";
+import EditPasswordScreen from "../screens/Profile/EditPasswordScreen";
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
-const MainTab = createBottomTabNavigator<MainTabParamList>();
+const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+const ProfileStack = createNativeStackNavigator<ProfileStackparamList>();
 
 function AuthNavigator() {
-    return (
-        <AuthStack.Navigator
-            screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: COLORS.background },
-            }}
-        >
-            <AuthStack.Screen name="Login" component={LoginScreen} />
-            <AuthStack.Screen name="Register" component={RegisterScreen} />
-            <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-            <AuthStack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
-        </AuthStack.Navigator>
-    );
+  return (
+    <AuthStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: COLORS.background },
+      }}
+    >
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+      <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <AuthStack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
+    </AuthStack.Navigator>
+  );
 }
 
-function MainNavigator() {
-    return (
-        <MainTab.Navigator
-            screenOptions={{
-                headerShown: false,
-                tabBarActiveTintColor: COLORS.primary,
-                tabBarInactiveTintColor: COLORS.text.secondary,
-                tabBarStyle: {
-                    backgroundColor: COLORS.surface,
-                    borderTopColor: COLORS.border,
-                    paddingBottom: 0,
-                    height: 64,
-                },
-            }}
-        >
-            <MainTab.Screen
-                name="ClassesTab"
-                component={ClassListScreen}
-                options={{
-                    tabBarLabel: "Turmas",
-                    tabBarIcon: ({ color }) => <Text style={{ color }}>📚</Text>,
-                }} />
-            <MainTab.Screen
-                name="ProfileTab"
-                component={ProfileScreen}
-                options={{
-                    tabBarLabel: "Perfil",
-                    tabBarIcon: ({ color }) => <Text style={{ color }}>👤</Text>,
-                }} />
-        </MainTab.Navigator>
-    );
+function HomeNavigator() {
+  return (
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="Home" component={HomeScreen} />
+      <HomeStack.Screen name="Profile" component={ProfileNavigator} options={{ headerShown: false }} />
+    </HomeStack.Navigator>
+  );
+}
+
+function ProfileNavigator() {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="Profile" component={ProfileScreen} options={{ title: "Perfil" }} />
+      <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: "Editar perfil" }} />
+      <ProfileStack.Screen name="EditPassword" component={EditPasswordScreen} options={{ title: "Alterar Senha" }} />
+    </ProfileStack.Navigator>
+  );
 }
 
 export function AppNavigator() {
@@ -83,7 +77,7 @@ export function AppNavigator() {
       <NavigationContainer>
         <RootStack.Navigator screenOptions={{ headerShown: false }}>
           {user ? (
-            <RootStack.Screen name="Main" component={MainNavigator} />
+            <RootStack.Screen name="Main" component={HomeNavigator} />
           ) : (
             <RootStack.Screen name="Auth" component={AuthNavigator} />
           )}

@@ -37,12 +37,29 @@ export const FONT_SIZES = {
     xxl: 32,
 };
 
+export const ICON_SIZES = {
+    sm: 16,
+    md: 24,
+    lg: 32,
+    xl: 48,
+};
+
 export const BORDER_RADIUS = {
     sm: 4,
     md: 8,
     lg: 12,
     xl: 16,
+    xll: 20,
     round: 9999,
+};
+
+export const AVATAR_SIZES = {
+    sm: 32,
+    md: 48,
+    lg: 64,
+    xl: 96,
+    xxl: 128,
+    large: 150
 };
 
 export const SHADOWS = {
