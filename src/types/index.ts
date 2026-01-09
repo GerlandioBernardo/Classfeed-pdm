@@ -134,7 +134,7 @@ export type AuthStackParamList = {
 
 export type HomeStackParamList = {
     Home: undefined;
-    Profile: undefined;
+    ProfileStack: undefined;
 };
 
 export type ProfileStackparamList = {

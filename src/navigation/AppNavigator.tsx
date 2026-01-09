@@ -45,7 +45,7 @@ function HomeNavigator() {
     return (
         <HomeStack.Navigator screenOptions={{ headerShown: false }}>
             <HomeStack.Screen name="Home" component={HomeScreen} />
-            <HomeStack.Screen name="Profile" component={ProfileNavigator} options={{ headerShown: false }} />
+            <HomeStack.Screen name="ProfileStack" component={ProfileNavigator} options={{ headerShown: false }} />
         </HomeStack.Navigator>
     );
 }

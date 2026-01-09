@@ -102,7 +102,7 @@ export default function HomeScreen({ navigation }: Props) {
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>ClassFeed</Text>
-                <Pressable onPress={() => navigation.navigate("Profile")}>
+                <Pressable onPress={() => navigation.navigate("ProfileStack")}>
                     <Avatar.Image size={44} source={{ uri: user?.profilePicture }} />
                 </Pressable>
             </View>
