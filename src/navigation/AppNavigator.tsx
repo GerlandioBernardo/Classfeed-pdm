@@ -14,11 +14,15 @@ import VerifyEmailScreen from "../screens/Auth/VerifyEmailScreen";
 
 // main screens
 import HomeScreen from "../screens/Home/HomeScreen";
+import CreateEditClassScreen from "../screens/Classes/CreateEditClassScreen";
 
 // profile screens
 import ProfileScreen from "../screens/Profile/ProfileScreen";
 import EditProfileScreen from "../screens/Profile/EditProfileScreen";
 import EditPasswordScreen from "../screens/Profile/EditPasswordScreen";
+
+// class navigator
+import { ClassTabNavigator } from "./ClassTabNavigator";
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -46,6 +50,12 @@ function HomeNavigator() {
         <HomeStack.Navigator screenOptions={{ headerShown: false }}>
             <HomeStack.Screen name="Home" component={HomeScreen} />
             <HomeStack.Screen name="ProfileStack" component={ProfileNavigator} options={{ headerShown: false }} />
+            <HomeStack.Screen name="ClassStack" component={ClassTabNavigator} options={{ headerShown: false }} />
+            <HomeStack.Screen 
+                name="CreateEditClass" 
+                component={CreateEditClassScreen} 
+                options={{ headerShown: false }} 
+            />
         </HomeStack.Navigator>
     );
 }
