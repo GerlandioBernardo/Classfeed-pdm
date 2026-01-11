@@ -1,93 +1,75 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import {
-    View,
-    Text,
-    StyleSheet,
-    FlatList,
-    TouchableOpacity,
-    ActivityIndicator,
-    RefreshControl,
-    Alert,
-    Pressable,
-    Image,
-} from "react-native";
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl, Pressable } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Class, HomeStackParamList } from "../../types";
-import { getClasses } from "../../services/classService";
 import { useAuth } from "../../contexts/AuthContext";
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from "../../constants";
-import { Avatar } from "react-native-paper";
+import { useClasses } from "../../contexts/ClassContext";
+import { COLORS, SPACING, FONT_SIZES } from "../../constants";
+import { Avatar, FAB } from "react-native-paper";
+import { ClassFilterModal, ClassFilters } from "../../components/Classes/ClassFilterModal";
+import ClassCard from "../../components/Classes/ClassCard";
+import ClassFilterBar from "../../components/Classes/ClassFilterBar";
 
 type Props = NativeStackScreenProps<HomeStackParamList, "Home">;
 
 export default function HomeScreen({ navigation }: Props) {
     const { user } = useAuth();
-    const [classes, setClasses] = useState<Class[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-
-    useEffect(() => {
-        loadClasses();
-    }, []);
+    const { classes, loading, refreshing, refreshClasses } = useClasses();
+    const [filterModalVisible, setFilterModalVisible] = useState(false);
+    const [filters, setFilters] = useState<ClassFilters>({
+        showActive: true,
+        showArchived: false,
+        showAsTeacher: true,
+        showAsStudent: true,
+    });
 
     useFocusEffect(
-        React.useCallback(() => {
-            loadClasses();
+        useCallback(() => {
+            refreshClasses();
         }, []),
     );
 
-    async function loadClasses() {
-        try {
-            const data = await getClasses();
-            setClasses([data.studentClasses, data.teacherClasses].flat());
-        } catch (error) {
-            Alert.alert("Erro", "Não foi possível carregar as turmas");
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }
+    const filteredClasses = useMemo(() => {
+        return classes.filter((classItem) => {
+            const isProfessor = classItem.teacherId === user?.id;
+            const isStudent = !isProfessor;
 
-    function onRefresh() {
-        setRefreshing(true);
-        loadClasses();
+            const statusMatch =
+                (filters.showActive && classItem.status === "Ativo") ||
+                (filters.showArchived && classItem.status === "Arquivado");
+
+            if (!statusMatch) return false;
+
+            const roleMatch = (filters.showAsTeacher && isProfessor) || (filters.showAsStudent && isStudent);
+
+            return roleMatch;
+        });
+    }, [classes, filters, user?.id]);
+
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (filters.showActive !== filters.showArchived) count++;
+        if (filters.showAsTeacher !== filters.showAsStudent) count++;
+        return count;
+    }, [filters]);
+
+    function handleApplyFilters(newFilters: ClassFilters) {
+        setFilters(newFilters);
     }
 
     function renderClassCard({ item }: { item: Class }) {
-        const isProfessor = item.professorId === user?.id;
-
         return (
-            <TouchableOpacity
-                style={styles.card}
-                // TO-DO
-                // onPress={() => navigation.navigate("ClassDetail", { classId: item.id })}
-                activeOpacity={0.7}
-            >
-                <View style={styles.cardHeader}>
-                    <Text style={styles.className}>{item.name}</Text>
-                    <View
-                        style={[
-                            styles.badge,
-                            { backgroundColor: item.status === "Ativo" ? COLORS.success : COLORS.text.light },
-                        ]}
-                    >
-                        <Text style={styles.badgeText}>{item.status === "Ativo" ? "Ativa" : "Inativa"}</Text>
-                    </View>
-                </View>
-
-                <Text style={styles.institution}>{item.institution}</Text>
-
-                <View style={styles.cardFooter}>
-                    <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>{isProfessor ? "👨‍🏫 Professor" : "👨‍🎓 Aluno"}</Text>
-                    </View>
-                    <Text style={styles.studentCount}>
-                        {/* {item.students.length} aluno{item.students.length !== 1 ? "s" : ""} */}0
-                    </Text>
-                </View>
-            </TouchableOpacity>
+            <ClassCard
+                __class={item}
+                onPress={() => navigation.navigate("ClassStack", { classId: item.id })}
+                role={user?.id === item.teacherId ? "professor" : "student"}
+            />
         );
+    }
+
+    function renderFilterBar() {
+        return <ClassFilterBar onPress={() => setFilterModalVisible(true)} activeFilterCount={activeFilterCount} />;
     }
 
     if (loading) {
@@ -108,22 +90,44 @@ export default function HomeScreen({ navigation }: Props) {
             </View>
 
             <FlatList
-                data={classes}
+                data={filteredClasses}
                 renderItem={renderClassCard}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.listContent}
+                ListHeaderComponent={renderFilterBar}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+                    <RefreshControl refreshing={refreshing} onRefresh={refreshClasses} tintColor={COLORS.primary} />
                 }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyIcon}>📚</Text>
-                        <Text style={styles.emptyText}>Nenhuma turma encontrada</Text>
+                        <Text style={styles.emptyIcon}>{activeFilterCount > 0 ? "🔍" : "📚"}</Text>
+                        <Text style={styles.emptyText}>
+                            {activeFilterCount > 0
+                                ? "Nenhuma turma encontrada com esses filtros"
+                                : "Nenhuma turma encontrada"}
+                        </Text>
                         <Text style={styles.emptySubtext}>
-                            Crie uma turma ou entre em uma através de um link de convite
+                            {activeFilterCount > 0
+                                ? "Tente ajustar os filtros ou limpar todos"
+                                : "Crie uma turma usando o botão + ou entre em uma através de um link de convite"}
                         </Text>
                     </View>
                 }
+            />
+
+            <FAB
+                icon="plus"
+                style={styles.fab}
+                color={COLORS.surface}
+                onPress={() => navigation.navigate("CreateEditClass", {})}
+                label="Nova Turma"
+            />
+
+            <ClassFilterModal
+                visible={filterModalVisible}
+                filters={filters}
+                onClose={() => setFilterModalVisible(false)}
+                onApplyFilters={handleApplyFilters}
             />
         </View>
     );
@@ -155,51 +159,29 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         color: COLORS.text.primary,
     },
-    listContent: {
-        padding: SPACING.lg,
-    },
-    card: {
-        backgroundColor: COLORS.surface,
-        borderRadius: BORDER_RADIUS.lg,
-        padding: SPACING.lg,
-        marginBottom: SPACING.md,
-        ...SHADOWS.md,
-    },
-    cardHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        marginBottom: SPACING.sm,
-    },
-    className: {
-        flex: 1,
-        fontSize: FONT_SIZES.lg,
-        fontWeight: "600",
-        color: COLORS.text.primary,
-        marginRight: SPACING.sm,
-    },
-    badge: {
-        paddingHorizontal: SPACING.sm,
-        paddingVertical: SPACING.xs,
-        borderRadius: BORDER_RADIUS.sm,
-    },
-    badgeText: {
-        fontSize: FONT_SIZES.xs,
-        color: COLORS.surface,
-        fontWeight: "600",
-    },
-    institution: {
-        fontSize: FONT_SIZES.sm,
-        color: COLORS.text.secondary,
-        marginBottom: SPACING.md,
-    },
-    cardFooter: {
+    resultsInfo: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        paddingTop: SPACING.sm,
-        borderTopWidth: 1,
-        borderTopColor: COLORS.border,
+    },
+    resultsText: {
+        fontSize: FONT_SIZES.sm,
+        color: COLORS.text.secondary,
+        fontWeight: "500",
+    },
+    clearButton: {
+        paddingVertical: SPACING.xs,
+        paddingHorizontal: SPACING.sm,
+    },
+    clearButtonText: {
+        fontSize: FONT_SIZES.sm,
+        color: COLORS.primary,
+        fontWeight: "600",
+    },
+    listContent: {
+        paddingHorizontal: SPACING.lg,
+        paddingBottom: SPACING.lg,
+        paddingTop: SPACING.md
     },
     infoRow: {
         flexDirection: "row",
@@ -234,5 +216,11 @@ const styles = StyleSheet.create({
         color: COLORS.text.secondary,
         textAlign: "center",
         paddingHorizontal: SPACING.xl,
+    },
+    fab: {
+        position: "absolute",
+        right: SPACING.lg,
+        bottom: SPACING.sm,
+        backgroundColor: COLORS.primary,
     },
 });
