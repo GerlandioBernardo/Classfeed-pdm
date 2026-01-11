@@ -15,5 +15,6 @@ export default function App() {
         </SnackbarProvider>
       </AuthProvider>
     </SafeAreaProvider>
+
   );
 }
