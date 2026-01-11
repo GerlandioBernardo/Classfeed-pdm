@@ -5,7 +5,6 @@ export interface User {
     email: string;
     profilePicture: string;
     birthdate: Date;
-    createdAt: Date;
 }
 
 export interface AuthCredentials {
@@ -37,8 +36,8 @@ export interface Class {
     institution: string;
     subject?: string;
     status: ClassStatus;
-    professorId: string;
-    professor: User;
+    teacherId: string;
+    teacher: User;
     students: User[];
     inviteLink: string;
     createdAt: Date;
@@ -86,6 +85,7 @@ export interface CreateLessonData {
 
 // feedback types
 export type FeedbackRating = 1 | 2 | 3 | 4 | 5;
+export type FeedbackType = "lesson" | "spontaneous"; // lesson = sobre uma aula específica, spontaneous = espontâneo
 
 export interface FeedbackCriteria {
     content: FeedbackRating;
@@ -95,19 +95,23 @@ export interface FeedbackCriteria {
 
 export interface Feedback {
     id: string;
-    lessonId: string;
+    classId: string;
+    lessonId?: string; // undefined se for feedback espontâneo
     studentId?: string; // undefined if anonymous
     criteria: FeedbackCriteria;
     comment?: string;
     isAnonymous: boolean;
+    type: FeedbackType;
     createdAt: Date;
 }
 
 export interface SubmitFeedbackData {
-    lessonId: string;
+    classId: string;
+    lessonId?: string; // undefined se for feedback espontâneo
     criteria: FeedbackCriteria;
     comment?: string;
     isAnonymous: boolean;
+    type: FeedbackType;
 }
 
 // stats types
@@ -135,6 +139,8 @@ export type AuthStackParamList = {
 export type HomeStackParamList = {
     Home: undefined;
     ProfileStack: undefined;
+    ClassStack: { classId: string };
+    CreateEditClass: { classId?: string };
 };
 
 export type ProfileStackparamList = {
@@ -149,11 +155,13 @@ export type MainTabParamList = {
     NotificationsTab: undefined;
 };
 
-export type ClassStackParamList = {
-    Feedback: undefined;
-    Lessons: undefined;
-    Students: undefined;
+export type ClassTabParamList = {
+    Feedback: { classId: string };
+    Lessons: { classId: string };
+    Students: { classId: string };
+};
 
+export type ClassStackParamList = {
     ClassDetail: { classId: string };
     CreateEditClass: { classId?: string };
 };
