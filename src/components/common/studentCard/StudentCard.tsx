@@ -6,7 +6,7 @@ import {styles} from './styles';
 interface StudentCardProps extends TouchableOpacityProps {
     imageURL: string,
     name: string
-    onDelete: () => void;
+    onDelete?: () => void;
 }
 
 export function StudentCard({imageURL, name, onDelete}: StudentCardProps) {
