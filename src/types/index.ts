@@ -136,11 +136,22 @@ export type AuthStackParamList = {
     VerifyEmail: { email: string };
 };
 
+type Coords = {
+    latitude: number;
+    longitude: number;
+}
+
 export type HomeStackParamList = {
     Home: undefined;
     ProfileStack: undefined;
     ClassStack: { classId: string };
     CreateEditClass: { classId?: string };
+    CreateLesson: {
+        location?: Coords
+    };
+    SelectLessonLocation: {
+        location?: Coords
+    };
 };
 
 export type ProfileStackparamList = {
