@@ -152,6 +152,7 @@ export type HomeStackParamList = {
     SelectLessonLocation: {
         location?: Coords
     };
+    
 };
 
 export type ProfileStackparamList = {
@@ -175,4 +176,5 @@ export type ClassTabParamList = {
 export type ClassStackParamList = {
     ClassDetail: { classId: string };
     CreateEditClass: { classId?: string };
+    ClassInfoStudent: {classId: string};
 };
