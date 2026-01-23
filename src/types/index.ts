@@ -177,4 +177,5 @@ export type ClassStackParamList = {
     ClassDetail: { classId: string };
     CreateEditClass: { classId?: string };
     ClassInfoStudent: {classId: string};
+    ClassInfoTeacher: {classId: string}
 };

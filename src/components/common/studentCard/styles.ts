@@ -4,8 +4,8 @@ import {COLORS } from "../../../constants/index";
 export const styles = StyleSheet.create({
     container: {
         backgroundColor: COLORS.surface,
-        width: 360,
-        height: 76,
+        width: 335,
+        height: 70,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
