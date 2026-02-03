@@ -17,6 +17,7 @@ import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from "../../const
 import { Avatar, FAB } from "react-native-paper";
 import { useSnackbar } from "../../contexts/SnackBarContext";
 import { useNavigation } from "@react-navigation/native";
+import * as classService from "../../services/classService";
 
 type Props = NativeStackScreenProps<ClassTabParamList, "Students">;
 
@@ -38,7 +39,7 @@ export default function ClassStudentsScreen({ route }: Props) {
         loadData();
     }, [classId]);
 
-    function loadData() {
+    async function loadData() {
         const classResponse = getClassById(classId);
 
         if (!classResponse) {
@@ -49,34 +50,36 @@ export default function ClassStudentsScreen({ route }: Props) {
 
         setClassData(classResponse);
 
-        // TO-do: substituir dados mockados por dados reais da API
-        setStudents([
-            {
-                id: "1",
-                name: "João Silva",
-                email: "joao@gmail.com",
-                profilePicture: "https://i.pravatar.cc/150?img=1",
-                birthdate: new Date("2000-01-01"),
-            },
-        ]);
-        // setStudents(classResponse.students);
+        try {
+            const studentList = await classService.getStudents(classId);
+            setStudents(studentList);
+        } catch (error) {
+            console.error("Error loading students:", error);
+            showSnackbar("Erro ao carregar lista de alunos", "error");
+        }
     }
 
     async function onRefresh() {
         await refreshClasses();
-        loadData();
+        await loadData();
     }
 
-    function handleAddStudent() {
+    async function handleAddStudent() {
         if (!studentEmail.trim()) {
             Alert.alert("Erro", "Digite o email do aluno");
             return;
         }
 
-        // TO-DO: implementar adição de aluno
-        Alert.alert("Em breve", "Funcionalidade de adicionar aluno será implementada");
-        setStudentEmail("");
-        setShowAddStudent(false);
+        try {
+            await classService.addStudent(classId, studentEmail);
+            showSnackbar("Aluno adicionado com sucesso!", "success");
+            setStudentEmail("");
+            setShowAddStudent(false);
+            loadData(); // Reload list
+        } catch (error) {
+            console.error("Error adding student:", error);
+            showSnackbar("Erro ao adicionar aluno. Verifique se o email está correto.", "error");
+        }
     }
 
     function handleRemoveStudent(student: User) {
@@ -85,9 +88,15 @@ export default function ClassStudentsScreen({ route }: Props) {
             {
                 text: "Remover",
                 style: "destructive",
-                onPress: () => {
-                    // TO-DO: implementar remoção de aluno
-                    Alert.alert("Em breve", "Funcionalidade de remover aluno será implementada");
+                onPress: async () => {
+                    try {
+                        await classService.removeStudent(classId, student.id);
+                        showSnackbar("Aluno removido com sucesso!", "success");
+                        loadData(); // Reload list
+                    } catch (error) {
+                        console.error("Error removing student:", error);
+                        showSnackbar("Erro ao remover aluno", "error");
+                    }
                 },
             },
         ]);

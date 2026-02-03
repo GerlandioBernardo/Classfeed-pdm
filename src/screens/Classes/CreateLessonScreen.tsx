@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import * as lessonService from "../../services/lessonService";
 import {
     View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Pressable,
     Alert
@@ -25,6 +26,7 @@ export function CreateLessonScreen({ route, navigation }: Props) {
     function handleOpenMap() {
         navigation.navigate("SelectLessonLocation", {
             location,
+            classId: route.params.classId,
         });
     }
 
@@ -40,7 +42,7 @@ export function CreateLessonScreen({ route, navigation }: Props) {
 
 
     // chama o backend aqui
-    function handleCreateLesson() {
+    async function handleCreateLesson() {
         if (!name.trim()) {
             Alert.alert("Erro", "Informe o nome da aula");
             return;
@@ -55,16 +57,34 @@ export function CreateLessonScreen({ route, navigation }: Props) {
             Alert.alert("Erro", "Horário inválido. Use HH:mm");
             return;
         }
+        // Location is optional in types, but checked here.
+        // if (!location) { ... } 
+        // Keeping existing validation if desired, or making it optional.
+        // The type has location?: ...
+        // If the user wants location to be mandatory according to previous code:
         if (!location) {
             Alert.alert("Erro", "Selecione a localização");
             return;
         }
-        const data = { name, date, time, location, };
-        Alert.alert('Sucesso', 'Aula criada com sucesso!');
-        console.log(data);
-        setName("");
-        setDate("");
-        setTime("");
+
+        const [day, month, year] = date.split('/').map(Number);
+        const dateObj = new Date(year, month - 1, day);
+
+        const lessonData = {
+            name,
+            date: dateObj,
+            time,
+            location
+        };
+
+        try {
+            await lessonService.createLesson(route.params.classId, lessonData);
+            Alert.alert('Sucesso', 'Aula criada com sucesso!');
+            navigation.goBack();
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Erro", "Não foi possível criar a aula.");
+        }
     }
 
     return (

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { ClassTabParamList, Class } from "../../types";
+import { ClassTabParamList, Class, Lesson } from "../../types";
 import { useClasses } from "../../contexts/ClassContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { COLORS, SPACING, FONT_SIZES, SHADOWS } from "../../constants";
 import { useSnackbar } from "../../contexts/SnackBarContext";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import * as lessonService from "../../services/lessonService";
 
 type Props = NativeStackScreenProps<ClassTabParamList, "Lessons">;
 
@@ -16,41 +17,98 @@ export default function ClassLessonsScreen({ route }: Props) {
     const { getClassById } = useClasses();
     const { showSnackbar } = useSnackbar();
     const [classData, setClassData] = useState<Class | null>(null);
-    const navigation = useNavigation();
+    const [lessons, setLessons] = useState<Lesson[]>([]);
+    const [loading, setLoading] = useState(true);
+    const navigation = useNavigation<any>();
 
     const isProfessor = classData?.teacherId === user?.id;
 
-    useEffect(() => {
-        loadData();
-    }, [classId]);
+    // Reload lessons when screen comes into focus
+    useFocusEffect(
+        React.useCallback(() => {
+            loadData();
+        }, [classId])
+    );
 
-    function loadData() {
-        const classResponse = getClassById(classId);
+    async function loadData() {
+        try {
+            setLoading(true);
+            const classResponse = getClassById(classId);
 
-        if (!classResponse) {
-            showSnackbar("Erro ao carregar a turma", "error");
-            navigation.goBack();
-            return;
+            if (!classResponse) {
+                showSnackbar("Erro ao carregar a turma", "error");
+                navigation.goBack();
+                return;
+            }
+
+            setClassData(classResponse);
+
+            // Fetch lessons from backend
+            const lessonsData = await lessonService.getLessons(classId);
+            setLessons(lessonsData);
+        } catch (error) {
+            console.error("Error loading lessons:", error);
+            showSnackbar("Erro ao carregar aulas", "error");
+        } finally {
+            setLoading(false);
         }
-
-        setClassData(classResponse);
     }
 
     function handleAddLesson() {
-        Alert.alert("Em breve", "Criar nova aula");
+        navigation.navigate("CreateLesson", { classId } as any);
+    }
+    function renderLesson({ item }: { item: Lesson }) {
+        const lessonDate = new Date(item.dateTime);
+        const formattedDate = lessonDate.toLocaleDateString("pt-BR");
+        const formattedTime = lessonDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+        function handleLessonPress() {
+            if (isProfessor) {
+                navigation.navigate("ClassInfoTeacher", { classId, lessonId: item.id });
+            } else {
+                navigation.navigate("ClassInfoStudent", { classId, lessonId: item.id });
+            }
+        }
+
+        return (
+            <TouchableOpacity style={styles.lessonCard} onPress={handleLessonPress}>
+                <View style={styles.lessonHeader}>
+                    <Text style={styles.lessonTitle}>{item.title}</Text>
+                    <Text style={styles.lessonDate}>{formattedDate}</Text>
+                </View>
+                <Text style={styles.lessonTime}>🕐 {formattedTime}</Text>
+            </TouchableOpacity>
+        );
+    }
+
+    if (loading) {
+        return (
+            <View style={styles.centerContainer}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+            </View>
+        );
     }
 
     return (
         <View style={styles.container}>
-            <View style={styles.emptyContainer}>
-                <Text style={styles.emptyIcon}>📝</Text>
-                <Text style={styles.emptyText}>Nenhuma aula cadastrada</Text>
-                <Text style={styles.emptySubtext}>
-                    {isProfessor
-                        ? "Adicione aulas usando o botão abaixo"
-                        : "As aulas criadas para esta turma aparecerão aqui"}
-                </Text>
-            </View>
+            {lessons.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyIcon}>📝</Text>
+                    <Text style={styles.emptyText}>Nenhuma aula cadastrada</Text>
+                    <Text style={styles.emptySubtext}>
+                        {isProfessor
+                            ? "Adicione aulas usando o botão abaixo"
+                            : "As aulas criadas para esta turma aparecerão aqui"}
+                    </Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={lessons}
+                    renderItem={renderLesson}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.listContent}
+                />
+            )}
 
             {isProfessor && (
                 <TouchableOpacity style={styles.fab} onPress={handleAddLesson}>
@@ -109,5 +167,35 @@ const styles = StyleSheet.create({
         fontSize: 32,
         color: COLORS.surface,
         fontWeight: "300",
+    },
+    listContent: {
+        padding: SPACING.md,
+    },
+    lessonCard: {
+        backgroundColor: COLORS.surface,
+        borderRadius: 12,
+        padding: SPACING.md,
+        marginBottom: SPACING.md,
+        ...SHADOWS.sm,
+    },
+    lessonHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: SPACING.xs,
+    },
+    lessonTitle: {
+        fontSize: FONT_SIZES.md,
+        fontWeight: "600",
+        color: COLORS.text.primary,
+        flex: 1,
+    },
+    lessonDate: {
+        fontSize: FONT_SIZES.sm,
+        color: COLORS.text.secondary,
+    },
+    lessonTime: {
+        fontSize: FONT_SIZES.sm,
+        color: COLORS.text.secondary,
     },
 });

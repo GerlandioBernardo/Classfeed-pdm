@@ -7,6 +7,7 @@ import { useClasses } from "../../contexts/ClassContext";
 import { COLORS, SPACING } from "../../constants";
 import { useSnackbar } from "../../contexts/SnackBarContext";
 import { useNavigation } from "@react-navigation/native";
+import * as classService from "../../services/classService";
 
 type Props = NativeStackScreenProps<ClassTabParamList, "Students">;
 
@@ -18,57 +19,23 @@ export default function ClassStudentsStudentScreen({ route }: Props) {
     const navigation = useNavigation();
 
     const [students, setStudents] = useState<User[]>([]);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         loadData();
     }, [classId]);
 
-    function loadData() {
-        const classResponse = getClassById(classId);
-
-        if (!classResponse) {
-            showSnackbar("Erro ao carregar a turma", "error");
-            navigation.goBack();
-            return;
+    async function loadData() {
+        setLoading(true);
+        try {
+            const data = await classService.getStudents(classId);
+            setStudents(data);
+        } catch (error) {
+            console.error(error);
+            showSnackbar("Erro ao carregar alunos", "error");
+        } finally {
+            setLoading(false);
         }
-
-        setStudents([
-            {
-                id: "1",
-                name: "João da Silva Pereira",
-                email: "joao.silva@gmail.com",
-                profilePicture: "https://i.ibb.co/TxknvgR5/4e90b2cab3ba.png",
-                birthdate: new Date("2000-01-01"),
-            },
-            {
-                id: "2",
-                name: "Maria de Souza Pereira",
-                email: "maria.souza@gmail.com",
-                profilePicture: "https://i.ibb.co/TxknvgR5/4e90b2cab3ba.png",
-                birthdate: new Date("2001-02-02"),
-            },
-              {
-                id: "1",
-                name: "João da Silva Pereira",
-                email: "joao.silva@gmail.com",
-                profilePicture: "https://i.ibb.co/TxknvgR5/4e90b2cab3ba.png",
-                birthdate: new Date("2000-01-01"),
-            },
-            {
-                id: "2",
-                name: "Maria de Souza Pereira",
-                email: "maria.souza@gmail.com",
-                profilePicture: "https://i.ibb.co/TxknvgR5/4e90b2cab3ba.png",
-                birthdate: new Date("2001-02-02"),
-            },
-              {
-                id: "1",
-                name: "João da Silva Pereira",
-                email: "joao.silva@gmail.com",
-                profilePicture: "https://i.ibb.co/TxknvgR5/4e90b2cab3ba.png",
-                birthdate: new Date("2000-01-01"),
-            },
-        ]);
     }
 
     async function onRefresh() {
@@ -90,7 +57,7 @@ export default function ClassStudentsStudentScreen({ route }: Props) {
                 )}
                 refreshControl={
                     <RefreshControl
-                        refreshing={refreshing}
+                        refreshing={loading || refreshing}
                         onRefresh={onRefresh}
                         tintColor={COLORS.primary}
                     />

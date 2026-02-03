@@ -82,10 +82,15 @@ export default function CreateEditClassScreen({ navigation, route }: Props) {
     }
 
     async function handleSubmit() {
-        if (!validate()) return;
+        console.log("Submit pressed");
+        if (!validate()) {
+            console.log("Validation failed", errors);
+            return;
+        }
 
         setLoading(true);
         try {
+            console.log("Starting create/update request");
             if (isEditing && classId) {
                 await updateClass({
                     id: classId,
@@ -96,19 +101,23 @@ export default function CreateEditClassScreen({ navigation, route }: Props) {
                 });
                 showSnackbar("Turma atualizada com sucesso", "success");
             } else {
+                console.log("Creating class with data:", { name, institution, subject, status });
                 const newClass = await createClass({
                     name: name.trim(),
                     institution: institution.trim(),
                     subject: subject.trim() || undefined,
                     status,
                 });
+                console.log("Class created:", newClass);
                 showSnackbar("Turma criada com sucesso", "success");
-                navigation.replace("ClassStack", { classId: newClass.id });
+                navigation.replace("ClassStack", { classId: newClass.id } as any);
                 return;
             }
             navigation.goBack();
         } catch (error: any) {
-            const message = error?.message || "Não foi possível salvar a turma";
+            console.error("Submit error:", error);
+            const message = error?.response?.data?.message || error?.message || "Não foi possível salvar a turma";
+            Alert.alert("Erro", message); // Using Alert to ensure user sees it
             showSnackbar(message, "error");
         } finally {
             setLoading(false);

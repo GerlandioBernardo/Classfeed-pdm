@@ -5,13 +5,14 @@ import { BORDER_RADIUS, COLORS, FONT_SIZES, SHADOWS, SPACING } from "../../const
 type ProfessorFeedbackViewProps = {
     stats: ClassStats | null;
     refreshing: boolean;
+    onRefresh: () => void;
 };
 
-export default function ProfessorFeedbackView({ stats, refreshing }: ProfessorFeedbackViewProps) {
+export default function ProfessorFeedbackView({ stats, refreshing, onRefresh }: ProfessorFeedbackViewProps) {
     return (
         <ScrollView
             style={styles.container}
-            refreshControl={<RefreshControl refreshing={refreshing} tintColor={COLORS.primary} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
         >
             <View style={styles.statsCard}>
                 <Text style={styles.sectionTitle}>Estatísticas Gerais</Text>
@@ -30,11 +31,36 @@ export default function ProfessorFeedbackView({ stats, refreshing }: ProfessorFe
                 </View>
             </View>
 
-            <View style={styles.emptyCard}>
-                <Text style={styles.emptyIcon}>📊</Text>
-                <Text style={styles.emptyText}>Nenhum feedback disponível</Text>
-                <Text style={styles.emptySubtext}>Os gráficos aparecerão aqui quando houver feedbacks</Text>
-            </View>
+            {stats && stats.totalFeedbacks > 0 ? (
+                <View style={styles.statsCard}>
+                    <Text style={styles.sectionTitle}>Médias por Critério</Text>
+                    <View style={styles.criteriaGrid}>
+                        {[
+                            { label: "Conteúdo", value: stats.averageRatings.content },
+                            { label: "Metodologia", value: stats.averageRatings.methodology },
+                            { label: "Engajamento", value: stats.averageRatings.engagement },
+                        ].map(({ label, value }) => (
+                            <View key={label} style={styles.criteriaItem}>
+                                <Text style={styles.criteriaValue}>{value.toFixed(1)}</Text>
+                                <Text style={styles.criteriaLabel}>{label}</Text>
+                                <View style={styles.starsRow}>
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <Text key={star} style={styles.star}>
+                                            {star <= Math.round(value) ? "⭐" : "☆"}
+                                        </Text>
+                                    ))}
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+            ) : (
+                <View style={styles.emptyCard}>
+                    <Text style={styles.emptyIcon}>📊</Text>
+                    <Text style={styles.emptyText}>Nenhum feedback disponível</Text>
+                    <Text style={styles.emptySubtext}>Os gráficos aparecerão aqui quando houver feedbacks</Text>
+                </View>
+            )}
         </ScrollView>
     );
 }
@@ -98,5 +124,35 @@ const styles = StyleSheet.create({
         fontSize: FONT_SIZES.sm,
         color: COLORS.text.secondary,
         textAlign: "center",
+    },
+    criteriaGrid: {
+        marginTop: SPACING.sm,
+    },
+    criteriaItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingVertical: SPACING.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
+    },
+    criteriaLabel: {
+        flex: 1,
+        fontSize: FONT_SIZES.md,
+        color: COLORS.text.primary,
+        marginLeft: SPACING.md,
+    },
+    criteriaValue: {
+        fontSize: FONT_SIZES.lg,
+        fontWeight: "bold",
+        color: COLORS.primary,
+        width: 40,
+    },
+    starsRow: {
+        flexDirection: "row",
+    },
+    star: {
+        fontSize: 14,
+        marginHorizontal: 1,
     },
 });

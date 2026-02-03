@@ -6,16 +6,16 @@ import { Avatar } from "react-native-paper";
 import { useAuth } from "../../contexts/AuthContext";
 
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../constants";
-import { Feedback } from "../../types";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { HomeStackParamList, Feedback } from "../../types";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type Props = {
-    feedback: Feedback;
-};
+type Props = NativeStackScreenProps<HomeStackParamList, "FeedbackDetail">;
 
-export default function ProfessorFeedbackDetailScreen({ feedback }: Props) {
+export default function ProfessorFeedbackDetailScreen({ route }: Props) {
     const navigation = useNavigation();
     const { user } = useAuth();
+    const { feedback } = route.params;
 
     return (
         <SafeAreaView style={styles.container}>
@@ -41,18 +41,18 @@ export default function ProfessorFeedbackDetailScreen({ feedback }: Props) {
                 <Text style={styles.title}>Feedback</Text>
             </View>
 
-                <ScrollView contentContainerStyle={styles.content}>
-                    <RatingRow label="Metodologia" value={feedback.criteria.methodology} />
-                    <RatingRow label="Conteúdo" value={feedback.criteria.content} />
-                    <RatingRow label="Engajamento" value={feedback.criteria.engagement} />
+            <ScrollView contentContainerStyle={styles.content}>
+                <RatingRow label="Metodologia" value={feedback.methodology} />
+                <RatingRow label="Conteúdo" value={feedback.content} />
+                <RatingRow label="Engajamento" value={feedback.engagement} />
 
-                    <View style={styles.commentBox}>
-                        <Text style={styles.commentLabel}>Opinião:</Text>
-                        <Text style={styles.commentText}>
-                            {feedback.comment || "Sem comentário"}
-                        </Text>
-                    </View>
-                </ScrollView>
+                <View style={styles.commentBox}>
+                    <Text style={styles.commentLabel}>Opinião:</Text>
+                    <Text style={styles.commentText}>
+                        {feedback.comment || "Sem comentário"}
+                    </Text>
+                </View>
+            </ScrollView>
         </SafeAreaView>
     );
 }

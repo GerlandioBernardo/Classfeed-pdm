@@ -59,17 +59,18 @@ export interface UpdateClassData extends CreateClassData {
 export interface Lesson {
     id: string;
     classId: string;
-    name: string;
-    date: Date;
-    time: string;
+    title: string;
+    dateTime: string | Date;
     location?: {
         latitude: number;
         longitude: number;
         address?: string;
     };
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
+
+// Duplicate Lesson interface removed (was added by mistake)
 
 export interface CreateLessonData {
     classId: string;
@@ -95,14 +96,16 @@ export interface FeedbackCriteria {
 
 export interface Feedback {
     id: string;
-    classId: string;
-    lessonId?: string; // undefined se for feedback espontâneo
+    lessonId: string;
     studentId?: string; // undefined if anonymous
-    criteria: FeedbackCriteria;
-    comment?: string;
-    isAnonymous: boolean;
-    type: FeedbackType;
-    createdAt: Date;
+    anonymous: boolean;
+    comment: string | null;
+    content: number;
+    methodology: number;
+    engagement: number;
+    lessonTitle?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface SubmitFeedbackData {
@@ -119,8 +122,11 @@ export interface ClassStats {
     totalStudents: number;
     totalLessons: number;
     totalFeedbacks: number;
-    averageRatings: FeedbackCriteria;
-    attendanceRate?: number;
+    averageRatings: {
+        content: number;
+        methodology: number;
+        engagement: number;
+    };
 }
 
 // navigation types
@@ -147,12 +153,17 @@ export type HomeStackParamList = {
     ClassStack: { classId: string };
     CreateEditClass: { classId?: string };
     CreateLesson: {
-        location?: Coords
+        location?: Coords;
+        classId: string;
     };
     SelectLessonLocation: {
-        location?: Coords
+        location?: Coords;
+        classId: string;
     };
-    
+    ClassInfoStudent: { classId: string; lessonId: string };
+    ClassInfoTeacher: { classId: string; lessonId: string };
+    StudentFeedback: { classId: string; lessonId: string };
+    FeedbackDetail: { feedback: Feedback };
 };
 
 export type ProfileStackparamList = {
@@ -176,6 +187,7 @@ export type ClassTabParamList = {
 export type ClassStackParamList = {
     ClassDetail: { classId: string };
     CreateEditClass: { classId?: string };
-    ClassInfoStudent: {classId: string};
-    ClassInfoTeacher: {classId: string}
+    ClassInfoStudent: { classId: string; lessonId: string };
+    ClassInfoTeacher: { classId: string; lessonId: string };
+    FeedbackDetail: { feedback: Feedback };
 };

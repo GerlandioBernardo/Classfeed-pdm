@@ -3,10 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity, Pressable } from "react-nativ
 import MapView, { Marker } from "react-native-maps";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { ClassStackParamList } from "../../types";
+import { ClassStackParamList, HomeStackParamList } from "../../types"; // Added HomeStackParamList
 import { COLORS, SPACING, FONT_SIZES } from "../../constants";
+import * as lessonService from "../../services/lessonService";
 
-type Props = NativeStackScreenProps<ClassStackParamList, "ClassInfoStudent">;
+type Props = NativeStackScreenProps<HomeStackParamList, "ClassInfoStudent">; // Changed ClassStackParamList to HomeStackParamList
 
 type Location = {
     latitude: number;
@@ -14,7 +15,7 @@ type Location = {
 };
 
 export default function ClassInfoStudentScreen({ route, navigation }: Props) {
-    const { classId } = route.params;
+    const { classId, lessonId } = route.params;
 
     const [title, setTitle] = useState("");
     const [date, setDate] = useState("");
@@ -23,18 +24,29 @@ export default function ClassInfoStudentScreen({ route, navigation }: Props) {
 
     useEffect(() => {
         loadClass();
-    }, [classId]);
+    }, [classId, lessonId]);
 
-    // chamar o backend aqui ou o contexto
-    function loadClass() {
-        // exemplo
-        setTitle("Introdução à DevOps");
-        setDate("26 de novembro de 2025");
-        setTime("15:30");
-        setLocation({
-            latitude: -23.55052,
-            longitude: -46.633308,
-        });
+    async function loadClass() {
+        try {
+            const lesson = await lessonService.getLessonById(classId, lessonId);
+            setTitle(lesson.title);
+            const lessonDate = new Date(lesson.dateTime);
+            setDate(lessonDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }));
+            setTime(lessonDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+            if (lesson.location) {
+                setLocation(lesson.location);
+            }
+        } catch (error) {
+            console.error(error);
+            // Alert or Snackbar could be added here
+        }
+    }
+
+    function handleFeedback() {
+        // Navigate to Feedback screen
+        // "Feedback" is in ClassTabParamList, so we might need to navigate to the 'Feedback' route in the TabNavigator if reachable.
+        // Assuming "Feedback" screen is registered as "Feedback".
+        navigation.navigate("StudentFeedback", { classId, lessonId }); // Changed "Feedback" to "StudentFeedback"
     }
 
     return (
@@ -74,7 +86,7 @@ export default function ClassInfoStudentScreen({ route, navigation }: Props) {
                     </MapView>
                 )}
 
-                <TouchableOpacity style={styles.button} activeOpacity={0.8}>
+                <TouchableOpacity style={styles.button} activeOpacity={0.8} onPress={handleFeedback}>
                     <Feather
                         name="message-square"
                         size={20}
@@ -105,10 +117,10 @@ const styles = StyleSheet.create({
         position: "relative",
     },
     arrow: {
-        position: "absolute", 
-        top: 38,          
-        left: SPACING.lg,         
-        zIndex: 10,               
+        position: "absolute",
+        top: 38,
+        left: SPACING.lg,
+        zIndex: 10,
     },
 
     title: {

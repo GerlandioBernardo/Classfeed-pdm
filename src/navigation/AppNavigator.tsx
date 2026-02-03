@@ -15,8 +15,13 @@ import VerifyEmailScreen from "../screens/Auth/VerifyEmailScreen";
 // main screens
 import HomeScreen from "../screens/Home/HomeScreen";
 import CreateEditClassScreen from "../screens/Classes/CreateEditClassScreen";
+import { CreateLessonScreen } from "../screens/Classes/CreateLessonScreen";
 
 import { SelectLessonLocation } from "../screens/Feedback/SelectLessonLocation";
+import ClassInfoStudentScreen from "../screens/Classes/ClassInfoStudentScreen";
+import ClassInfoTeacherScreen from "../screens/Classes/ClassInfoTeacherScreen";
+import StudentFeedbackScreen from "../screens/Feedback/StudentFeedbackScreen";
+import ProfessorFeedbackDetailScreen from "../screens/Feedback/TeacherFeedbackDetailScreen";
 
 // profile screens
 import ProfileScreen from "../screens/Profile/ProfileScreen";
@@ -61,8 +66,33 @@ function HomeNavigator() {
                 options={{ headerShown: false }}
             />
             <HomeStack.Screen
+                name="CreateLesson"
+                component={CreateLessonScreen}
+                options={{ headerShown: false }}
+            />
+            <HomeStack.Screen
                 name="SelectLessonLocation"
                 component={SelectLessonLocation}
+                options={{ headerShown: false }}
+            />
+            <HomeStack.Screen
+                name="ClassInfoStudent"
+                component={ClassInfoStudentScreen}
+                options={{ headerShown: false }}
+            />
+            <HomeStack.Screen
+                name="ClassInfoTeacher"
+                component={ClassInfoTeacherScreen}
+                options={{ headerShown: false }}
+            />
+            <HomeStack.Screen
+                name="StudentFeedback"
+                component={StudentFeedbackScreen}
+                options={{ headerShown: false }}
+            />
+            <HomeStack.Screen
+                name="FeedbackDetail"
+                component={ProfessorFeedbackDetailScreen}
                 options={{ headerShown: false }}
             />
 

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TextInput, Pressable, Alert, } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { Avatar } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,12 +8,17 @@ import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from "../../const
 import { FeedbackCriteria } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { HomeStackParamList } from "../../types";
+import * as feedbackService from "../../services/feedbackService";
 
+type Props = NativeStackScreenProps<HomeStackParamList, "StudentFeedback">;
+// Using any for ParamList to avoid strict check if I'm not sure where it is.
+// But ClassTabParamList has Feedback.
 
-
-export default function StudentFeedbackScreen() {
+export default function StudentFeedbackScreen({ route }: Props) {
     const navigation = useNavigation();
     const { user } = useAuth();
+    const { classId, lessonId } = route.params as { classId: string; lessonId?: string };
 
     const [criteria, setCriteria] = useState<FeedbackCriteria>({
         content: 0 as any,
@@ -32,7 +38,7 @@ export default function StudentFeedbackScreen() {
         }));
     }
 
-    function handleSubmit() {
+    async function handleSubmit() {
         if (
             !criteria.content ||
             !criteria.methodology ||
@@ -44,14 +50,31 @@ export default function StudentFeedbackScreen() {
             return;
         }
 
-        const payload = {
-            criteria,
-            comment,
+        // Check if lessonId exists. If not, it might be spontaneous feedback? 
+        // Our service currently requires lessonId for the route: /class/:classId/lesson/:lessonId/feedback
+        // If lessonId is missing, we can't use that route.
+        // Assuming lessonId is present for this screen as per user flow (Lesson -> Feedback).
+        if (!lessonId) {
+            Alert.alert("Erro", "ID da aula não encontrado.");
+            return;
+        }
+
+        const feedbackData = {
+            content: criteria.content,
+            methodology: criteria.methodology,
+            engagement: criteria.engagement,
+            comment: comment || undefined,
+            anonymous: false, // Defaulting to false as per current UI
         };
 
-        console.log("Feedback enviado:", payload);
-
-        Alert.alert("Obrigado!", "Seu feedback foi enviado com sucesso.");
+        try {
+            await feedbackService.createFeedback(classId, lessonId, feedbackData);
+            Alert.alert("Obrigado!", "Seu feedback foi enviado com sucesso.");
+            navigation.goBack();
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Erro", "Falha ao enviar feedback.");
+        }
 
         setCriteria({
             content: 0 as any,
@@ -172,7 +195,7 @@ const styles = StyleSheet.create({
     content: {
         padding: SPACING.lg,
     },
-    arrow:{
+    arrow: {
         marginTop: 15,
         marginLeft: 10,
     },

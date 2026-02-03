@@ -45,6 +45,7 @@ export function SelectLessonLocation({ navigation, route }: Props) {
 
         navigation.navigate("CreateLesson", {
             location: markerLocation,
+            classId: route.params.classId,
         });
     }
 

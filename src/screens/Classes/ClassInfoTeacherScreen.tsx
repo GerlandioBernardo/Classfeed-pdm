@@ -1,89 +1,63 @@
 import React, { useEffect, useState } from "react";
-import {View, Text, StyleSheet, Pressable, FlatList, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, Pressable, FlatList, RefreshControl, TouchableOpacity } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import {Ionicons } from "@expo/vector-icons";
-import { ClassStackParamList } from "../../types";
+import { Ionicons } from "@expo/vector-icons";
+import { HomeStackParamList, Feedback } from "../../types";
 import { COLORS, SPACING, FONT_SIZES } from "../../constants";
-import { StudentCard } from "../../components/common/studentCard/StudentCard";
-import { User } from "../../types/index";
 import { useClasses } from "../../contexts/ClassContext";
+import { SafeAreaView } from "react-native-safe-area-context";
+import * as lessonService from "../../services/lessonService";
+import * as feedbackService from "../../services/feedbackService";
 
-type Props = NativeStackScreenProps<ClassStackParamList, "ClassInfoTeacher">;
+type Props = NativeStackScreenProps<HomeStackParamList, "ClassInfoTeacher">;
 
 type Location = {
     latitude: number;
     longitude: number;
 };
 
-export default function ClassInfoStudentScreen({ route, navigation }: Props) {
-    const { classId } = route.params;
+export default function ClassInfoTeacherScreen({ route, navigation }: Props) {
+    const { classId, lessonId } = route.params;
 
     const [title, setTitle] = useState("");
     const [date, setDate] = useState("");
     const [time, setTime] = useState("");
     const [location, setLocation] = useState<Location | null>(null);
 
-    const [students, setStudents] = useState<User[]>([]);
+    const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    const { refreshing, refreshClasses } = useClasses();
+    const { refreshClasses } = useClasses();
 
     useEffect(() => {
-        loadClass();
-    }, [classId]);
+        loadData();
+    }, [classId, lessonId]);
 
-    // chamar o backend aqui ou o contexto
-    function loadClass() {
-        // exemplo
-        setTitle("Introdução à DevOps");
-        setDate("26 de novembro de 2025");
-        setTime("15:30");
-        setLocation({
-            latitude: -7.117853719196769,
-            longitude: -34.863812289494724
-        });
+    async function loadData() {
+        setLoading(true);
+        try {
+            const lesson = await lessonService.getLessonById(classId, lessonId);
+            setTitle(lesson.title);
+            const lessonDate = new Date(lesson.dateTime);
+            setDate(lessonDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }));
+            setTime(lessonDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+            if (lesson.location) {
+                setLocation(lesson.location);
+            }
 
-        setStudents([
-            {
-                id: "1",
-                name: "João da Silva Pereira",
-                email: "joao.silva@gmail.com",
-                profilePicture: "https://i.ibb.co/TxknvgR5/4e90b2cab3ba.png",
-                birthdate: new Date("2000-01-01"),
-            },
-            {
-                id: "2",
-                name: "Maria de Souza Pereira",
-                email: "maria.souza@gmail.com",
-                profilePicture: "https://i.ibb.co/TxknvgR5/4e90b2cab3ba.png",
-                birthdate: new Date("2001-02-02"),
-            },
-            {
-                id: "3",
-                name: "João da Silva Pereira",
-                email: "joao.silva@gmail.com",
-                profilePicture: "https://i.ibb.co/TxknvgR5/4e90b2cab3ba.png",
-                birthdate: new Date("2000-01-01"),
-            },
-            {
-                id: "4",
-                name: "Maria de Souza Pereira",
-                email: "maria.souza@gmail.com",
-                profilePicture: "https://i.ibb.co/TxknvgR5/4e90b2cab3ba.png",
-                birthdate: new Date("2001-02-02"),
-            },
-            {
-                id: "5",
-                name: "João da Silva Pereira",
-                email: "joao.silva@gmail.com",
-                profilePicture: "https://i.ibb.co/TxknvgR5/4e90b2cab3ba.png",
-                birthdate: new Date("2000-01-01"),
-            },
-        ]);
+            const feedbackList = await feedbackService.getFeedbacks(classId, lessonId);
+            setFeedbacks(feedbackList);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
     }
+
     async function onRefresh() {
-        await refreshClasses();
-        loadClass();
+        await refreshClasses(); // Optional: checks if global refresh needed
+        loadData();
     }
 
     return (
@@ -125,25 +99,35 @@ export default function ClassInfoStudentScreen({ route, navigation }: Props) {
                 <Text style={styles.titleFeedback}>Feedbacks</Text>
 
                 <FlatList
-                    data={students}
+                    data={feedbacks}
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={styles.list}
                     renderItem={({ item }) => (
-                        <StudentCard
-                            name={item.name}
-                            imageURL={item.profilePicture}
-                        />
+                        <TouchableOpacity
+                            style={styles.feedbackItem}
+                            onPress={() => navigation.navigate("FeedbackDetail", { feedback: item })}
+                        >
+                            <Text style={styles.feedbackText}>
+                                Feedback (Anon: {item.anonymous ? "Sim" : "Não"})
+                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="star" size={16} color={COLORS.warning} />
+                                <Text style={{ marginLeft: 4, color: COLORS.text.secondary }}>
+                                    M:{item.methodology} C:{item.content} E:{item.engagement}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
                     )}
                     style={{ flex: 1 }}
-
                     refreshControl={
                         <RefreshControl
-                            refreshing={refreshing}
+                            refreshing={loading}
                             onRefresh={onRefresh}
                             tintColor={COLORS.primary}
                         />
                     }
                     showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20, color: COLORS.text.secondary }}>Nenhum feedback recebido.</Text>}
                 />
             </View>
 
@@ -204,8 +188,22 @@ const styles = StyleSheet.create({
     titleFeedback: {
         color: COLORS.text.primary,
         fontSize: FONT_SIZES.xl,
+        marginTop: SPACING.lg,
     },
     list: {
         gap: SPACING.md,
     },
+    feedbackItem: {
+        padding: SPACING.md,
+        backgroundColor: COLORS.surface,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: "#E4E4E7",
+    },
+    feedbackText: {
+        fontSize: FONT_SIZES.md,
+        color: COLORS.text.primary,
+        fontWeight: "500",
+        marginBottom: 4,
+    }
 });
